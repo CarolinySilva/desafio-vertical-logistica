@@ -7,19 +7,20 @@ const upload = require('./config/multer');
 
 const PORT = process.env.PORT || 3000;
 
-//Endpoint de upload de arquivo txt
-app.post('/api/upload', upload.single('file'), (req, res) => {
+// Endpoint para upload de arquivo txt
+app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
-    const file = req.file;
-    if (!file) {
+    if (!req.file) {
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
-    const pedidos = fileProcessor(file.path); 
-    res.status(200).json(pedidos);
+    // Processa o arquivo enviado e obtém os pedidos
+    const orders = await fileProcessor(req.file.path);
+    res.status(200).json(orders);
+    
   } catch (error) {
-    console.error('Erro no upload:', error);
-    res.status(500).json({ error: 'Erro ao processar o arquivo' });
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message || 'Erro ao processar o arquivo' });
   }
 });
 
