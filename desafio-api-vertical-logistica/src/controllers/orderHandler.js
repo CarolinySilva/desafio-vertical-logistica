@@ -1,45 +1,92 @@
-const { parseFile, filterListOrders} = require('../services/orderProcessor');
-
-let cachedData = [];
+const { processUploadedFile } = require('../services/orderProcessor');
+const cache = require('../utils/cache');
 
 /**
+ * Controlador responsável por processar o upload do arquivo.
  * 
- * Responsável por:
- * - Receber o arquivo .txt enviado via multipart/form-data
- * - Validar a presença do arquivo
- * - Delegar o processamento para o orderProcessor
- * - Retornar a estrutura de pedidos normalizada como resposta
+ * Recebe o arquivo enviado, processa os dados de pedidos,
+ * e armazena os resultados em cache para consultas futuras.
  *
- * @param {object} req - Objeto da requisição Express, contendo o arquivo em req.file
- * @param {object} res - Objeto da resposta Express
- * @returns {void}
+ * @param {object} req - Objeto da requisição contendo o arquivo.
+ * @param {object} res - Objeto da resposta para enviar ao cliente.
+ * @param {function} next - Função para encaminhar erros.
  */
-
-const uploadFile = async (req, res, next) => {
+async function uploadFile(req, res, next) {
   try {
-    if (!req.file || !req.file.originalname.endsWith('.txt')) {
-      return res.status(400).json({ error: 'Arquivo inválido. Por gentileza, envie um .txt' });
-    }
-    cachedData = await parseFile(req.file.path);
-    return res.status(200).json({ message: 'Upload processado com sucesso.', data: cachedData });
-  } catch (err) {
-    next(err);
-  }
-};
+    const filePath = req.file.path;
 
+    // Processa o arquivo e obtém os dados normalizados dos pedidos
+    const orders = await processUploadedFile(filePath);
+
+    // Armazena os dados processados no cache para acesso posterior
+    cache.set('cachedOrders', orders);
+
+    // Retorna mensagem de sucesso junto com os dados processados
+    res.status(200).json({ 
+      message: 'Arquivo processado com sucesso.',
+      data: orders
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+}
 
 /**
- * Funcao para listar os pedidos com filtros opcionais
+ * Controlador responsável por listar os pedidos processados.
+ * 
+ * Recupera dados do cache e aplica filtros opcionais por user_id, order_id e data,
+ * caso fornecidos via query string.
+ * Caso não haja dados em cache, retorna erro solicitando upload prévio.
+ *
+ * @param {object} req - Objeto da requisição contendo filtros na query.
+ * @param {object} res - Objeto da resposta para enviar ao cliente.
+ * @param {function} next - Função para encaminhar erros.
  */
-const listOrders = (req, res, next) => {
+async function listOrders(req, res, next) {
   try {
-    console.log('cachedData:', cachedData); 
+    // Obtém os dados do cache
+    const cached = cache.get('cachedOrders');
 
-    const { order_id, start_date, end_date } = req.query;
-    const result = filterListOrders(cachedData, { order_id, start_date, end_date });
-    res.status(200).json(result);
-  } catch (err) {
-    next(err);
+    if (!cached) {
+      return res.status(404).json({ message: 'Nenhum dado encontrado. Faça o upload do arquivo primeiro.' });
+    }
+
+    let filtered = cached;
+    const { user_id, order_id, date } = req.query;
+
+    // Aplica filtro por user_id, se informado
+    if (user_id) {
+      filtered = filtered.filter(user => String(user.user_id) === String(user_id));
+    }
+
+    // Aplica filtro por order_id, se informado
+    if (order_id) {
+      filtered = filtered
+        .map(user => ({
+          ...user,
+          orders: user.orders.filter(order => String(order.order_id) === String(order_id))
+        }))
+        .filter(user => user.orders.length > 0);
+    }
+
+    // Aplica filtro por data, se informado
+    if (date) {
+      filtered = filtered
+        .map(user => ({
+          ...user,
+          orders: user.orders.filter(order => order.date === date)
+        }))
+        .filter(user => user.orders.length > 0);
+    }
+
+    res.status(200).json(filtered);
+  } catch (error) {
+    next(error);
   }
+}
+
+module.exports = {
+  uploadFile,
+  listOrders
 };
-module.exports = { uploadFile, listOrders };
