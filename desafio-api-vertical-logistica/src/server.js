@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const fileProcessor = require('./services/fileProcessor'); // <-- ajuste aqui
+const fileProcessor = require('./services/fileProcessor');
 
 const app = express();
 const upload = require('./config/multer');
@@ -17,7 +17,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     // Processa o arquivo enviado e obtém os pedidos
     const orders = await fileProcessor(req.file.path);
     res.status(200).json(orders);
-    
+
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: error.message || 'Erro ao processar o arquivo' });
@@ -27,3 +27,4 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
