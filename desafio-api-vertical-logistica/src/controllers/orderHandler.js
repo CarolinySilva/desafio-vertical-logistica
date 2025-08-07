@@ -1,4 +1,4 @@
-const { parseFile } = require('../services/orderProcessor');
+const { parseFile, filterListOrders} = require('../services/orderProcessor');
 
 let cachedData = [];
 
@@ -27,4 +27,19 @@ const uploadFile = async (req, res, next) => {
   }
 };
 
-module.exports = { uploadFile };
+
+/**
+ * Funcao para listar os pedidos com filtros opcionais
+ */
+const listOrders = (req, res, next) => {
+  try {
+    console.log('cachedData:', cachedData); 
+
+    const { order_id, start_date, end_date } = req.query;
+    const result = filterListOrders(cachedData, { order_id, start_date, end_date });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+module.exports = { uploadFile, listOrders };

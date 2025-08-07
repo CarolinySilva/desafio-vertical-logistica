@@ -16,4 +16,18 @@ async function parseFile(filePath) {
   return groupOrdersByUser(parsed);
 }
 
-module.exports = { parseFile };
+function filterListOrders(data, { order_id, start_date, end_date }) {
+  return data.map(user => {
+    const filteredOrders = user.orders.filter(order => {
+      const matchId = order_id ? order.order_id === Number(order_id) : true;
+      const matchDate =
+        (!start_date || new Date(order.date) >= new Date(start_date)) &&
+        (!end_date || new Date(order.date) <= new Date(end_date));
+      return matchId && matchDate;
+    });
+    return { ...user, orders: filteredOrders };
+  }).filter(user => user.orders.length);
+}
+
+module.exports = { parseFile, filterListOrders };
+

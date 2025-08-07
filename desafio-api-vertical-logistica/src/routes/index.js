@@ -13,4 +13,12 @@ const orderHandler = require('../controllers/orderHandler');
  */
 router.post('/upload', upload.single('file'), orderHandler.uploadFile);
 
+/**
+ * GET /api/orders
+ * Retorna os pedidos processados com filtros opcionais:
+ * - order_id: filtra por ID do pedido
+ * - start_date e end_date: filtra pedidos dentro do intervalo de datas (YYYY-MM-DD)
+ */
+router.get('/orders', orderHandler.listOrders);
+
 module.exports = router;
