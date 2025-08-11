@@ -14,16 +14,12 @@ const cache = require('../utils/cache');
 async function uploadFile(req, res, next) {
   try {
     const filePath = req.file.path;
-
-    // Processa o arquivo e obtém os dados normalizados dos pedidos
     const orders = await processUploadedFile(filePath);
 
-    // Armazena os dados processados no cache para acesso posterior
     cache.set('cachedOrders', orders);
 
-    // Retorna mensagem de sucesso junto com os dados processados
     res.status(200).json({ 
-      message: 'Arquivo processado com sucesso.',
+      message: 'File processed successfully.',
       data: orders
     });
     
@@ -45,22 +41,19 @@ async function uploadFile(req, res, next) {
  */
 async function listOrders(req, res, next) {
   try {
-    // Obtém os dados do cache
     const cached = cache.get('cachedOrders');
 
     if (!cached) {
-      return res.status(404).json({ message: 'Nenhum dado encontrado. Faça o upload do arquivo primeiro.' });
+      return res.status(404).json({ message: 'No data found. Please upload the file first.' });
     }
 
     let filtered = cached;
     const { user_id, order_id, date } = req.query;
 
-    // Aplica filtro por user_id, se informado
     if (user_id) {
       filtered = filtered.filter(user => String(user.user_id) === String(user_id));
     }
 
-    // Aplica filtro por order_id, se informado
     if (order_id) {
       filtered = filtered
         .map(user => ({
@@ -70,7 +63,6 @@ async function listOrders(req, res, next) {
         .filter(user => user.orders.length > 0);
     }
 
-    // Aplica filtro por data, se informado
     if (date) {
       filtered = filtered
         .map(user => ({

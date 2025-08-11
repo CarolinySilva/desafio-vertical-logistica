@@ -11,16 +11,11 @@ const { extractRecordFromLine, groupOrdersByUser } = require('../utils/orderPars
  * @returns {Promise<Array>} - Array com os pedidos normalizados agrupados por usuário.
  */
 async function processUploadedFile(filePath) {
-  const content = await fileSystem.readFile(filePath, 'utf-8');
-  
-  // Divide o conteúdo em linhas fixas de 95 caracteres
-  const lines = content.match(/.{1,95}/g);
+    const content = await fileSystem.readFile(filePath, 'utf-8');
+    const lines = content.match(/.{1,95}/g);
+    const parsed = lines.map(extractRecordFromLine);
 
-  // Extrai os dados de cada linha
-  const parsed = lines.map(extractRecordFromLine);
-
-  // Agrupa os pedidos por usuário e retorna a estrutura final
-  return groupOrdersByUser(parsed);
+    return groupOrdersByUser(parsed);
 }
 
 /**
@@ -45,7 +40,6 @@ function filterListOrders(data, { order_id, start_date, end_date }) {
       });
       return { ...user, orders: filteredOrders };
     })
-    // Remove usuários sem pedidos após filtragem
     .filter(user => user.orders.length > 0);
 }
 

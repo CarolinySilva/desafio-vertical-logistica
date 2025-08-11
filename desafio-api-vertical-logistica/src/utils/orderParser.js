@@ -63,7 +63,6 @@ function groupOrdersByUser(lines) {
     order.total += line.value;
   }
 
-  // Formata total dos pedidos com 2 casas decimais
   for (const user of users.values()) {
     user.orders.forEach(o => o.total = o.total.toFixed(2));
   }
