@@ -1,4 +1,4 @@
-const { processUploadedFile } = require('../services/orderProcessor');
+const { processUploadedFile, filterListOrders } = require('../services/orderProcessor');
 const cache = require('../utils/cache');
 
 /**
@@ -22,7 +22,6 @@ async function uploadFile(req, res, next) {
       message: 'File processed successfully.',
       data: orders
     });
-    
   } catch (error) {
     next(error);
   }
@@ -42,32 +41,24 @@ async function uploadFile(req, res, next) {
 async function listOrders(req, res, next) {
   try {
     const cached = cache.get('cachedOrders');
-
     if (!cached) {
       return res.status(404).json({ message: 'No data found. Please upload the file first.' });
     }
 
-    let filtered = cached;
-    const { user_id, order_id, date } = req.query;
+    const { order_id, start_date, end_date } = req.query;
+    let filtered = filterListOrders(cached, { order_id, start_date, end_date });
+
+    const { user_id, date } = req.query;
 
     if (user_id) {
       filtered = filtered.filter(user => String(user.user_id) === String(user_id));
-    }
-
-    if (order_id) {
-      filtered = filtered
-        .map(user => ({
-          ...user,
-          orders: user.orders.filter(order => String(order.order_id) === String(order_id))
-        }))
-        .filter(user => user.orders.length > 0);
     }
 
     if (date) {
       filtered = filtered
         .map(user => ({
           ...user,
-          orders: user.orders.filter(order => order.date === date)
+          orders: user.orders.filter(order => order.date === date),
         }))
         .filter(user => user.orders.length > 0);
     }
@@ -77,6 +68,7 @@ async function listOrders(req, res, next) {
     next(error);
   }
 }
+
 
 module.exports = {
   uploadFile,

@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +17,7 @@
     "multer": "^2.0.2"
   },
   "devDependencies": {
-    "dotenv": "^17.2.1"
+    "dotenv": "^17.2.1",
+    "jest": "^30.0.5"
   }
 }

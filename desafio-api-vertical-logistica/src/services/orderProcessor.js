@@ -28,8 +28,14 @@ async function processUploadedFile(filePath) {
  * @param {object} filters - Objeto contendo filtros opcionais: order_id, start_date, end_date.
  * @returns {Array} - Lista filtrada com pedidos conforme critérios aplicados.
  */
-function filterListOrders(data, { order_id, start_date, end_date }) {
-  return data
+function filterListOrders(data, { user_id, order_id, start_date, end_date }) {
+  let filtered = data;
+
+  if (user_id) {
+    filtered = filtered.filter(user => String(user.user_id) === String(user_id));
+  }
+
+  return filtered
     .map(user => {
       const filteredOrders = user.orders.filter(order => {
         const matchId = order_id ? order.order_id === Number(order_id) : true;
