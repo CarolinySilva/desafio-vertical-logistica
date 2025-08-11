@@ -28,6 +28,7 @@ describe('orderHandler.listOrders', () => {
       order_id: undefined,
       start_date: undefined,
       end_date: undefined,
+      user_id: "1",
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(cachedData);

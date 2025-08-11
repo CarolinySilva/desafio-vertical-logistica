@@ -13,12 +13,18 @@ const cache = require('../utils/cache');
  */
 async function uploadFile(req, res, next) {
   try {
-    const filePath = req.file.path;
-    const orders = await processUploadedFile(filePath);
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded. Please send a .txt file.' });
+    }
 
+    if (!req.file.originalname.endsWith('.txt')) {
+      return res.status(400).json({ message: 'Invalid file type. Only .txt files are accepted.' });
+    }
+
+    const orders = await processUploadedFile(req.file.path);
     cache.set('cachedOrders', orders);
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'File processed successfully.',
       data: orders
     });
@@ -26,6 +32,7 @@ async function uploadFile(req, res, next) {
     next(error);
   }
 }
+
 
 /**
  * Controlador responsável por listar os pedidos processados.
@@ -45,30 +52,12 @@ async function listOrders(req, res, next) {
       return res.status(404).json({ message: 'No data found. Please upload the file first.' });
     }
 
-    const { order_id, start_date, end_date } = req.query;
-    let filtered = filterListOrders(cached, { order_id, start_date, end_date });
-
-    const { user_id, date } = req.query;
-
-    if (user_id) {
-      filtered = filtered.filter(user => String(user.user_id) === String(user_id));
-    }
-
-    if (date) {
-      filtered = filtered
-        .map(user => ({
-          ...user,
-          orders: user.orders.filter(order => order.date === date),
-        }))
-        .filter(user => user.orders.length > 0);
-    }
-
+    const filtered = filterListOrders(cached, req.query);
     res.status(200).json(filtered);
   } catch (error) {
     next(error);
   }
 }
-
 
 module.exports = {
   uploadFile,

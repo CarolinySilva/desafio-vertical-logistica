@@ -11,7 +11,11 @@
 module.exports = (err, req, res, next) => {
   console.error('Captured error:', err.stack);
 
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error'
-  });
+  const statusCode = err.status || 500;
+  const message =
+    statusCode === 500
+      ? 'Internal server error'
+      : err.message || 'Unexpected error';
+
+  res.status(statusCode).json({ error: message });
 };

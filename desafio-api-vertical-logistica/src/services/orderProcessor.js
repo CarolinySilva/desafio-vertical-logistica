@@ -1,4 +1,5 @@
-const fileSystem = require('fs/promises');
+const fileSystem = require('fs');
+const readline = require('readline');
 const { extractRecordFromLine, groupOrdersByUser } = require('../utils/orderParser');
 
 /**
@@ -11,12 +12,22 @@ const { extractRecordFromLine, groupOrdersByUser } = require('../utils/orderPars
  * @returns {Promise<Array>} - Array com os pedidos normalizados agrupados por usuário.
  */
 async function processUploadedFile(filePath) {
-    const content = await fileSystem.readFile(filePath, 'utf-8');
-    const lines = content.match(/.{1,95}/g);
-    const parsed = lines.map(extractRecordFromLine);
+  const fileStream = fileSystem.createReadStream(filePath);
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
 
-    return groupOrdersByUser(parsed);
+  const parsed = [];
+  for await (const line of rl) {
+    if (line.trim().length > 0) {
+      parsed.push(extractRecordFromLine(line));
+    }
+  }
+
+  return groupOrdersByUser(parsed);
 }
+
 
 /**
  * Aplica filtros opcionais na lista de pedidos agrupados por usuário.
@@ -28,25 +39,24 @@ async function processUploadedFile(filePath) {
  * @param {object} filters - Objeto contendo filtros opcionais: order_id, start_date, end_date.
  * @returns {Array} - Lista filtrada com pedidos conforme critérios aplicados.
  */
-function filterListOrders(data, { user_id, order_id, start_date, end_date }) {
-  let filtered = data;
-
-  if (user_id) {
-    filtered = filtered.filter(user => String(user.user_id) === String(user_id));
-  }
-
-  return filtered
+function filterListOrders(data, { user_id, order_id, start_date, end_date, date }) {
+  return data
+    .filter(user => !user_id || String(user.user_id) === String(user_id))
     .map(user => {
       const filteredOrders = user.orders.filter(order => {
-        const matchId = order_id ? order.order_id === Number(order_id) : true;
-        const matchDate =
+        const matchId = !order_id || order.order_id === Number(order_id);
+        const matchDateRange =
           (!start_date || new Date(order.date) >= new Date(start_date)) &&
           (!end_date || new Date(order.date) <= new Date(end_date));
-        return matchId && matchDate;
+        const matchExactDate = !date || order.date === date;
+
+        return matchId && matchDateRange && matchExactDate;
       });
+
       return { ...user, orders: filteredOrders };
     })
     .filter(user => user.orders.length > 0);
 }
 
+module.exports = { processUploadedFile, filterListOrders };
 module.exports = { processUploadedFile, filterListOrders };
